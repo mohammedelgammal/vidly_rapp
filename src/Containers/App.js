@@ -8,8 +8,9 @@ import Pagination from '../components/pagination.jsx'
 import { paginate } from '../utils/paginate'
 import Filter from '../components/filter'
 import filterFun from '../utils/filter'
+import _ from 'lodash';
 import 'bootstrap/dist/css/bootstrap.min.css'
-import 'font-awesome/css/font-awesome.min.css'
+import 'font-awesome/css/font-awesome.css'
     
 class App extends Component {
     state = { 
@@ -17,7 +18,8 @@ class App extends Component {
         genres: getGenres(),
         paginationPageSize: 4,
         currentPage: 1,
-        currentFilter: 'all'
+        currentFilter: 'all',
+        sorting: {column: 'title', order: 'asc'}
     } 
     
     getMoviesCount = () => {
@@ -46,18 +48,29 @@ class App extends Component {
         })
     }
 
-    handleGenreChange = (genre) => { 
+    handleGenreChange = genre => { 
         const movies = genre === 'all' ?
             getMovies() :
             getMovies().filter(movie => movie.genre.name === genre) 
         this.setState({ movies, currentFilter: genre })
     }
 
+    handleSort = (column, order) => {
+        const sorting = { ...this.state.sorting }
+        sorting['column'] = column;
+        sorting['order'] = sorting['order'] === 'asc' ? 'desc' : 'asc';
+        
+        this.setState({
+            sorting
+        })
+    }
+
 
     render() {
-        const { movies, paginationPageSize, currentPage, currentFilter, genres } = this.state,
+        const { movies, paginationPageSize, currentPage, currentFilter, genres, sorting } = this.state,
             filteredList = filterFun(currentFilter, movies),
-            paginated = paginate(filteredList, currentPage, paginationPageSize);
+            sortedList = _.orderBy(filteredList, [sorting.column], [sorting.order]),
+            paginatedList = paginate(sortedList, currentPage, paginationPageSize);
 
         return (
             <div className='App'>
@@ -75,9 +88,10 @@ class App extends Component {
                                 <div className='col-9'>
                                     <Title moviesCount={movies.length} />
                                     <Movies
-                                        moviesList={paginated}
+                                        moviesList={paginatedList}
                                         onDelete={this.handleDelete}
                                         onLike={this.handleLike}
+                                        onSort={this.handleSort}
                                     />
                                     <Pagination
                                         moviesCount={movies.length}
